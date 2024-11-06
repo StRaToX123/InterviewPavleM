@@ -9,7 +9,7 @@ using Random = UnityEngine.Random;
 public class GameplayManager : MonoBehaviour
 {
     public GameObject m_cardPrefab;
-    public List<Texture> m_cardTextures;
+    public List<Sprite> m_cardSprites;
     public GridLayoutGroup m_cardsGridLayoutGroup;
     
     public uint rowCount
@@ -44,8 +44,8 @@ public class GameplayManager : MonoBehaviour
 
 
     private Card[,] m_cardMatrix;
-    private uint m_rowCount;
-    private uint m_columnCount;
+    private uint m_rowCount = 2;
+    private uint m_columnCount = 2;
     private RectTransform m_cardHolder;
 
     void Start()
@@ -80,11 +80,11 @@ public class GameplayManager : MonoBehaviour
         // First we need to choose two cards from the m_cardMatrix
         // To do this we will jumble up the cardIndexes array first
         // then iterate over it, we will treat two consecutive indexes as pairs
-        int iterationCount = Random.Range(5, 11);
-        for (int i = 0; i < iterationCount; i++)
+        Random.InitState((int)System.DateTime.Now.Ticks);
+        for (int i = 0; i < cardIndexes.Count / 2; i++)
         {
             int randomIndex01 = Random.Range(0, cardIndexes.Count);
-            int randomIndex02 = ((randomIndex01 * 20) - 43) % cardIndexes.Count;
+            int randomIndex02 = Math.Abs((randomIndex01 * 20) - 43) % cardIndexes.Count;
             Tuple<uint, uint> backup = cardIndexes[randomIndex01];
             cardIndexes[randomIndex01] = cardIndexes[randomIndex02];
             cardIndexes[randomIndex02] = backup;
@@ -104,16 +104,26 @@ public class GameplayManager : MonoBehaviour
         // But in order to garantee that all the cards will be on-screen,
         // only their size needs to be adjusted (while preserving their 1.0 aspect ration)
         // Calculate how large the cards have to be in order to fit on-screen horizontally
-        int cardWidth = (int)m_cardHolder.sizeDelta.x - m_cardsGridLayoutGroup.padding.horizontal;
+        int cardWidth = (int)m_cardHolder.rect.width - m_cardsGridLayoutGroup.padding.horizontal;
         cardWidth -= (int)((m_columnCount - 1) * m_cardsGridLayoutGroup.spacing.x);
         cardWidth = (int)(cardWidth / m_columnCount);
 
-        int cardHeight = (int)m_cardHolder.sizeDelta.y - m_cardsGridLayoutGroup.padding.vertical;
+        int cardHeight = (int)m_cardHolder.rect.height - m_cardsGridLayoutGroup.padding.vertical;
         cardHeight -= (int)((m_rowCount - 1) * m_cardsGridLayoutGroup.spacing.y);
         cardHeight = (int)(cardHeight / m_rowCount);
 
-        int cardSize = cardWidth < cardHeight ? cardWidth : cardHeight;
-        m_cardsGridLayoutGroup.cellSize = new Vector2(cardSize, cardSize);
+        if (cardWidth < cardHeight)
+        {
+            m_cardsGridLayoutGroup.cellSize = new Vector2(cardWidth, cardWidth);
+            m_cardsGridLayoutGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            m_cardsGridLayoutGroup.constraintCount = (int)m_columnCount;
+        }
+        else
+        {
+            m_cardsGridLayoutGroup.cellSize = new Vector2(cardHeight, cardHeight);
+            m_cardsGridLayoutGroup.constraint = GridLayoutGroup.Constraint.FixedRowCount;
+            m_cardsGridLayoutGroup.constraintCount = (int)m_rowCount;
+        }   
     }
 
 
