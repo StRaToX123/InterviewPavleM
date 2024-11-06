@@ -103,7 +103,7 @@ public class GameplayManager : MonoBehaviour
         // This will be done automatically by the m_cardsGridLayout component
         // But in order to garantee that all the cards will be on-screen,
         // only their size needs to be adjusted (while preserving their 1.0 aspect ration)
-        // Calculate how large the cards have to be in order to fit on-screen horizontally
+        // Calculate how large the cards have to be in order to fit on-screen
         int cardWidth = (int)m_cardHolder.rect.width - m_cardsGridLayoutGroup.padding.horizontal;
         cardWidth -= (int)((m_columnCount - 1) * m_cardsGridLayoutGroup.spacing.x);
         cardWidth = (int)(cardWidth / m_columnCount);
