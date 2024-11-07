@@ -6,14 +6,21 @@ using UnityEngine.UI;
 
 public class MenuManager : MonoBehaviour
 {
+    public GameplayManager m_gameplayManager;
     public GameObject m_mainMenu;
     public GameObject m_newGameMenu;
     public GameObject m_victoryMenu;
     public GameObject m_cardHolder;
+    public GameObject m_gameplayUI;
     public TMP_Dropdown m_newGameMenuRowCountDropDown;
     public TMP_Dropdown m_newGameMenuColumnCountDropDown;
     public Button m_newGameMenuStartButton;
-    public GameplayManager m_gameplayManager;
+    public TMP_Text m_gameplayUITimeText;
+    public TMP_Text m_gameplayUIScoreText;
+    public TMP_Text m_gameplayUIMultiplierText;
+    public TMP_Text m_victoryMenuModeText;
+    public TMP_Text m_victoryMenuFinalScoreText;
+    public TMP_Text m_victoryMenuFinalTimeText;
 
     void Start()
     {
@@ -52,6 +59,7 @@ public class MenuManager : MonoBehaviour
     {
         m_newGameMenuColumnCountDropDown.options.Clear();
         m_newGameMenuColumnCountDropDown.interactable = true;
+        m_newGameMenuStartButton.interactable = true;
         for (int i = 1; i <= m_gameplayManager.m_cardSprites.Count; i++)
         {
             // If the row count times the column count, equals an even number than this
@@ -63,12 +71,17 @@ public class MenuManager : MonoBehaviour
             }
         }
 
-        m_newGameMenuColumnCountDropDown.onValueChanged.Invoke(0);
+        // We need to set the main dropdown menu label manually
+        // Changing the options list, or invoking a onValueChanged
+        // still doesn't refresh the main label value
+        m_newGameMenuColumnCountDropDown.value = 0;
+        m_newGameMenuColumnCountDropDown.captionText.text = m_newGameMenuColumnCountDropDown.options[0].text;
+
     }
 
     public void OnNewGameMenuColumnCountChanged()
     {
-        m_newGameMenuStartButton.interactable = true;
+        
     }
 
     public void OnNewGameMenuStartButtonClick()
@@ -89,13 +102,13 @@ public class MenuManager : MonoBehaviour
         m_newGameMenu.SetActive(false);
         m_cardHolder.SetActive(true);
         m_gameplayManager.enabled = true;
-        m_gameplayManager.SetGameplayUIVisibility(true);
+        m_gameplayUI.SetActive(true);
     }
 
     public void OnGamePlayBackButtonClick()
     {
         m_gameplayManager.enabled = false;
-        m_gameplayManager.SetGameplayUIVisibility(false);
+        m_gameplayUI.SetActive(false);
         m_cardHolder.SetActive(false);
         m_mainMenu.SetActive(true);
     }
@@ -103,5 +116,6 @@ public class MenuManager : MonoBehaviour
     public void OnVictoryMenuBackButtonClick()
     {
         OnGamePlayBackButtonClick();
+        m_victoryMenu.SetActive(false);
     }
 }

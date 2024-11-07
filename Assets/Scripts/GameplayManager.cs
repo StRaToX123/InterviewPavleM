@@ -10,10 +10,12 @@ using Random = UnityEngine.Random;
 
 public class GameplayManager : MonoBehaviour
 {
+    public int m_pairMatchScoreValue = 10;
     public MenuManager m_menuManager;
     public GameObject m_cardPrefab;
     public List<Sprite> m_cardSprites;
     public GridLayoutGroup m_cardsGridLayoutGroup;
+    public RectTransform m_cardHolderRect;
     [HideInInspector]
     public int m_rowCount = 2;
     [HideInInspector]
@@ -24,18 +26,21 @@ public class GameplayManager : MonoBehaviour
 
 
     private Card[,] m_cardMatrix;
-    private RectTransform m_cardHolder;
-    private int m_comboCounter = 1;
+    
+    private int m_score = 0;
+    private int m_pairMatchScoreMultiplier = 1;
     private int m_numberOfActiveCards;
+    private float m_elapsedTime = 0.0f;
 
-    void Start()
+    void OnEnable()
     {
         if (m_cardPrefab == null)
         {
             throw new Exception("No card prefab set");
         }
 
-        m_cardHolder = m_cardsGridLayoutGroup.gameObject.GetComponent<RectTransform>();
+        m_menuManager.m_gameplayUIScoreText.text = "0";
+        m_menuManager.m_gameplayUIMultiplierText.text = "x1";
         m_cardMatrix = new Card[m_rowCount, m_columnCount];
         m_numberOfActiveCards = m_rowCount * m_columnCount;
         // In order to optimize randomly choosing two cards from the m_cardMatrix and assigning them the same pairID,
@@ -55,7 +60,7 @@ public class GameplayManager : MonoBehaviour
                 newCard.m_cardIndexes = new Tuple<int, int>(i, j);
 
                 // Parent to newly instantiated prefab to the grid layout
-                newCardGameObject.transform.SetParent(m_cardHolder.transform, false);
+                newCardGameObject.transform.SetParent(m_cardHolderRect.transform, false);
                 cardIndexes.Add(new Tuple<int, int>(i, j));
             }
         }
@@ -91,11 +96,11 @@ public class GameplayManager : MonoBehaviour
         // But in order to garantee that all the cards will be on-screen,
         // only their size needs to be adjusted (while preserving their 1.0 aspect ration)
         // Calculate how large the cards have to be in order to fit on-screen
-        int cardWidth = (int)m_cardHolder.rect.width - m_cardsGridLayoutGroup.padding.horizontal;
+        int cardWidth = (int)m_cardHolderRect.rect.width - m_cardsGridLayoutGroup.padding.horizontal;
         cardWidth -= (int)((m_columnCount - 1) * m_cardsGridLayoutGroup.spacing.x);
         cardWidth = (int)(cardWidth / m_columnCount);
 
-        int cardHeight = (int)m_cardHolder.rect.height - m_cardsGridLayoutGroup.padding.vertical;
+        int cardHeight = (int)m_cardHolderRect.rect.height - m_cardsGridLayoutGroup.padding.vertical;
         cardHeight -= (int)((m_rowCount - 1) * m_cardsGridLayoutGroup.spacing.y);
         cardHeight = (int)(cardHeight / m_rowCount);
 
@@ -122,7 +127,9 @@ public class GameplayManager : MonoBehaviour
             // If the previous card's pair id and the newly selected card's pair id is the same
             if (previousCard.m_pairId == currentCard.m_pairId)
             {
-                m_comboCounter++;
+                m_score += m_pairMatchScoreValue * m_pairMatchScoreMultiplier;
+                m_pairMatchScoreMultiplier++;
+                m_menuManager.m_gameplayUIScoreText.text = "SCORE: " + m_score.ToString();
                 // We cannot destroy these cards because that will rearange the grid layout.
                 // Instead we will just diable the image component
                 previousCard.m_image.enabled = false;
@@ -131,12 +138,12 @@ public class GameplayManager : MonoBehaviour
                 // Did we finish the game
                 if (m_numberOfActiveCards == 0)
                 {
-                    m_menuManager.m_victoryMenu.SetActive(true);
+                    ShowVictoryScreen();
                 }
             }
             else
             {
-                m_comboCounter = 1;
+                m_pairMatchScoreMultiplier = 1;
                 // Playing the flip animation
                 previousCard.m_animation.Stop();
                 previousCard.m_animation.Play();
@@ -144,6 +151,7 @@ public class GameplayManager : MonoBehaviour
                 currentCard.m_animation.Play();
             }
 
+            m_menuManager.m_gameplayUIMultiplierText.text = "x" + m_pairMatchScoreMultiplier.ToString();
             m_lastSelectedCardIndexes = null;
         }
         else
@@ -152,14 +160,21 @@ public class GameplayManager : MonoBehaviour
         }
     }
 
-    public void SetGameplayUIVisibility(bool visible)
+    private void ShowVictoryScreen()
     {
-        
+        m_menuManager.m_gameplayUI.SetActive(false);
+        m_menuManager.m_victoryMenu.SetActive(true);
+        m_menuManager.m_victoryMenuModeText.text = "MODE: " + m_rowCount.ToString() + "X" + m_columnCount.ToString();
+        m_menuManager.m_victoryMenuFinalScoreText.text = "FINAL SCORE: " + m_score.ToString();
+        m_menuManager.m_victoryMenuFinalTimeText.text = "FINAL TIME: " + Mathf.FloorToInt(m_elapsedTime) + "sec";
     }
-
 
     void Update()
     {
-        
+        // Update the timer
+        m_elapsedTime += Time.deltaTime;
+        int minutes = Mathf.FloorToInt(m_elapsedTime / 60);
+        int seconds = Mathf.FloorToInt(m_elapsedTime % 60);
+        m_menuManager.m_gameplayUITimeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 }
