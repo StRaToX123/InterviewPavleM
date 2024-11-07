@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
@@ -8,45 +10,23 @@ using Random = UnityEngine.Random;
 
 public class GameplayManager : MonoBehaviour
 {
+    public MenuManager m_menuManager;
     public GameObject m_cardPrefab;
     public List<Sprite> m_cardSprites;
     public GridLayoutGroup m_cardsGridLayoutGroup;
-    
-    public uint rowCount
-    {
-        get
-        {
-            return m_rowCount;
-        }
-        set
-        {
-            m_rowCount = value;
-        }
-    }
+    [HideInInspector]
+    public int m_rowCount = 2;
+    [HideInInspector]
+    public int m_columnCount = 2;
+    [HideInInspector]
+    public Tuple<int, int> m_lastSelectedCardIndexes = null;
 
-    public uint columnCount
-    {
-        get
-        {
-            return m_columnCount;
-        }
-        set
-        {
-            if ((m_rowCount * value) % 2 > 0)
-            {
-                Debug.Log("owrCount and columnCount multiplication needs to result with an even number");
-                return;
-            }
-
-            m_columnCount = value;
-        }
-    }
 
 
     private Card[,] m_cardMatrix;
-    private uint m_rowCount = 2;
-    private uint m_columnCount = 2;
     private RectTransform m_cardHolder;
+    private int m_comboCounter = 1;
+    private int m_numberOfActiveCards;
 
     void Start()
     {
@@ -57,21 +37,26 @@ public class GameplayManager : MonoBehaviour
 
         m_cardHolder = m_cardsGridLayoutGroup.gameObject.GetComponent<RectTransform>();
         m_cardMatrix = new Card[m_rowCount, m_columnCount];
+        m_numberOfActiveCards = m_rowCount * m_columnCount;
         // In order to optimize randomly choosing two cards from the m_cardMatrix and assigning them the same pairID,
-        // instead of calling Random.Range a bunch of times in order to select to never before selected cards, we will
-        // create this helper array which houses each cards flattened index. We will then shuffle the contents of the array
-        // (a fixed number of Random.Range calls) and then simply iterate over it, taking each two conse consecutive values
+        // instead of calling Random.Range a bunch of times in order to select never before selected cards, we will
+        // create this helper array which houses each cards indexes. We will then shuffle the contents of the array
+        // (a fixed number of Random.Range calls) and then simply iterate over it, taking each two consecutive values
         // as a randomly selected pair of indexes
-        List<Tuple<uint, uint>> cardIndexes = new List<Tuple<uint, uint>>((int)(m_rowCount * m_columnCount));
-        for (uint i = 0; i < m_rowCount; i++)
+        List<Tuple<int, int>> cardIndexes = new List<Tuple<int, int>>(m_numberOfActiveCards);
+        for (int i = 0; i < m_rowCount; i++)
         {
-            for (uint j = 0; j < m_columnCount; j++)
+            for (int j = 0; j < m_columnCount; j++)
             {
-                GameObject newCard = Instantiate(m_cardPrefab, new Vector3(0, 0, 0), Quaternion.identity);
-                m_cardMatrix[i, j] = newCard.GetComponent<Card>();
+                GameObject newCardGameObject = Instantiate(m_cardPrefab, new Vector3(0, 0, 0), Quaternion.identity);
+                Card newCard = newCardGameObject.GetComponent<Card>();
+                m_cardMatrix[i, j] = newCard;
+                newCard.m_gameplayManager = this;
+                newCard.m_cardIndexes = new Tuple<int, int>(i, j);
+
                 // Parent to newly instantiated prefab to the grid layout
-                newCard.transform.SetParent(m_cardHolder.transform, false);
-                cardIndexes.Add(new Tuple<uint, uint>(i, j));
+                newCardGameObject.transform.SetParent(m_cardHolder.transform, false);
+                cardIndexes.Add(new Tuple<int, int>(i, j));
             }
         }
 
@@ -85,17 +70,19 @@ public class GameplayManager : MonoBehaviour
         {
             int randomIndex01 = Random.Range(0, cardIndexes.Count);
             int randomIndex02 = Math.Abs((randomIndex01 * 20) - 43) % cardIndexes.Count;
-            Tuple<uint, uint> backup = cardIndexes[randomIndex01];
+            Tuple<int, int> backup = cardIndexes[randomIndex01];
             cardIndexes[randomIndex01] = cardIndexes[randomIndex02];
             cardIndexes[randomIndex02] = backup;
         }
 
-        uint pairID = 0;
+        int id = 0;
         for (int i = 0; i < cardIndexes.Count; i += 2)
         {
-            m_cardMatrix[cardIndexes[i].Item1, cardIndexes[i].Item2].m_pairID = pairID;
-            m_cardMatrix[cardIndexes[i + 1].Item1, cardIndexes[i + 1].Item2].m_pairID = pairID;
-
+            m_cardMatrix[cardIndexes[i].Item1, cardIndexes[i].Item2].m_pairId = id;
+            m_cardMatrix[cardIndexes[i].Item1, cardIndexes[i].Item2].m_frontSideSprite = m_cardSprites[id];
+            m_cardMatrix[cardIndexes[i + 1].Item1, cardIndexes[i + 1].Item2].m_pairId = id;
+            m_cardMatrix[cardIndexes[i + 1].Item1, cardIndexes[i + 1].Item2].m_frontSideSprite = m_cardSprites[id];
+            id += 1;
         }
 
 
@@ -126,7 +113,49 @@ public class GameplayManager : MonoBehaviour
         }   
     }
 
+    public void SelectCard(Tuple<int, int> cardIndexes)
+    {
+        if (m_lastSelectedCardIndexes != null)
+        {
+            Card previousCard = m_cardMatrix[m_lastSelectedCardIndexes.Item1, m_lastSelectedCardIndexes.Item2];
+            Card currentCard = m_cardMatrix[cardIndexes.Item1, cardIndexes.Item2];
+            // If the previous card's pair id and the newly selected card's pair id is the same
+            if (previousCard.m_pairId == currentCard.m_pairId)
+            {
+                m_comboCounter++;
+                // We cannot destroy these cards because that will rearange the grid layout.
+                // Instead we will just diable the image component
+                previousCard.m_image.enabled = false;
+                currentCard.m_image.enabled = false;
+                m_numberOfActiveCards -= 2;
+                // Did we finish the game
+                if (m_numberOfActiveCards == 0)
+                {
+                    m_menuManager.m_victoryMenu.SetActive(true);
+                }
+            }
+            else
+            {
+                m_comboCounter = 1;
+                // Playing the flip animation
+                previousCard.m_animation.Stop();
+                previousCard.m_animation.Play();
+                currentCard.m_animation.Stop();
+                currentCard.m_animation.Play();
+            }
 
+            m_lastSelectedCardIndexes = null;
+        }
+        else
+        {
+            m_lastSelectedCardIndexes = cardIndexes;
+        }
+    }
+
+    public void SetGameplayUIVisibility(bool visible)
+    {
+        
+    }
 
 
     void Update()

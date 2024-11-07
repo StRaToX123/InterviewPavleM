@@ -53,7 +53,7 @@ AnimationClip:
   m_FloatCurves: []
   m_PPtrCurves: []
   m_SampleRate: 60
-  m_WrapMode: 0
+  m_WrapMode: 1
   m_Bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0, y: 0, z: 0}
@@ -179,7 +179,14 @@ AnimationClip:
   m_HasMotionFloatCurves: 0
   m_Events:
   - time: 0.5
-    functionName: Flip
+    functionName: OnFlipAnimationEvent
+    data: 
+    objectReferenceParameter: {fileID: 478791420526565906, guid: 80ea2962734ff204cad8035440a0aa4c, type: 3}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1
+    functionName: OnFlipAnimationComplete
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
