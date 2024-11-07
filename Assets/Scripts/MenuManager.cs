@@ -12,6 +12,7 @@ public class MenuManager : MonoBehaviour
     public GameObject m_victoryMenu;
     public GameObject m_cardHolder;
     public GameObject m_gameplayUI;
+    public UnityEngine.UI.Button m_mainMenuContinueButton;
     public TMP_Dropdown m_newGameMenuRowCountDropDown;
     public TMP_Dropdown m_newGameMenuColumnCountDropDown;
     public Button m_newGameMenuStartButton;
@@ -22,8 +23,15 @@ public class MenuManager : MonoBehaviour
     public TMP_Text m_victoryMenuFinalScoreText;
     public TMP_Text m_victoryMenuFinalTimeText;
 
-    void Start()
+    void OnEnable()
     {
+        
+    }
+
+    public void OnMainMenuNewGameButtonClick()
+    {
+        m_mainMenu.SetActive(false);
+        m_newGameMenu.SetActive(true);
         // Populate the rowCount dropdown
         m_newGameMenuRowCountDropDown.options.Clear();
         m_newGameMenuColumnCountDropDown.interactable = false;
@@ -38,15 +46,13 @@ public class MenuManager : MonoBehaviour
         }
     }
 
-    public void OnMainMenuNewGameButtonClick()
-    {
-        m_mainMenu.SetActive(false);
-        m_newGameMenu.SetActive(true);
-    }
-
     public void OnMainMenuContinueButtonClick()
     {
-        
+        m_mainMenu.SetActive(false);
+        m_gameplayUI.SetActive(true);
+        m_cardHolder.SetActive(true);
+        m_gameplayManager.enabled = true;
+        SaveGameManager.LoadGame();
     }
 
     public void OnNewGameMenuBackButtonClick()
@@ -97,16 +103,23 @@ public class MenuManager : MonoBehaviour
             Debug.Log("Failed parsing the column count number");
         }
 
+        m_newGameMenuRowCountDropDown.options.Clear();
+        m_newGameMenuRowCountDropDown.value = 0;
+        m_newGameMenuColumnCountDropDown.options.Clear();
+        m_newGameMenuColumnCountDropDown.value = 0;
         m_newGameMenuColumnCountDropDown.interactable = false;
         m_newGameMenuStartButton.interactable = false;
         m_newGameMenu.SetActive(false);
         m_cardHolder.SetActive(true);
         m_gameplayManager.enabled = true;
         m_gameplayUI.SetActive(true);
+        SaveGameManager.NewGame();
+        m_gameplayManager.StartNewGame();
     }
 
     public void OnGamePlayBackButtonClick()
     {
+        SaveGameManager.SaveGame();
         m_gameplayManager.enabled = false;
         m_gameplayUI.SetActive(false);
         m_cardHolder.SetActive(false);

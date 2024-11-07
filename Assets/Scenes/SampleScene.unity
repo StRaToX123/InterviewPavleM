@@ -2844,6 +2844,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 649430593}
+  - component: {fileID: 649430595}
   - component: {fileID: 649430592}
   - component: {fileID: 649430594}
   m_Layer: 0
@@ -2916,6 +2917,7 @@ MonoBehaviour:
   m_victoryMenu: {fileID: 199698159}
   m_cardHolder: {fileID: 937023444}
   m_gameplayUI: {fileID: 924621497}
+  m_mainMenuContinueButton: {fileID: 1647294941}
   m_newGameMenuRowCountDropDown: {fileID: 453914744}
   m_newGameMenuColumnCountDropDown: {fileID: 1618804040}
   m_newGameMenuStartButton: {fileID: 654105837}
@@ -2925,6 +2927,18 @@ MonoBehaviour:
   m_victoryMenuModeText: {fileID: 311625880}
   m_victoryMenuFinalScoreText: {fileID: 1844696325}
   m_victoryMenuFinalTimeText: {fileID: 1127338971}
+--- !u!114 &649430595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 649430591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d132255d8f4f4c43b2a6fcef1c81187, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &653056865
 GameObject:
   m_ObjectHideFlags: 0
@@ -4803,6 +4817,7 @@ GameObject:
   - component: {fileID: 1189323194}
   - component: {fileID: 1189323193}
   - component: {fileID: 1189323195}
+  - component: {fileID: 1189323196}
   m_Layer: 5
   m_Name: MainMenu
   m_TagString: Untagged
@@ -4897,6 +4912,19 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &1189323196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1189323191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3532b5b304928b4e8abf72e2e12f1a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_mainMenuContinueButton: {fileID: 1647294941}
 --- !u!1 &1221910550
 GameObject:
   m_ObjectHideFlags: 0

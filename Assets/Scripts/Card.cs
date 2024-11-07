@@ -24,6 +24,9 @@ public class Card : MonoBehaviour
     private UnityEngine.UI.Button m_button;
     [HideInInspector]
     public GameplayManager m_gameplayManager;
+    // Cards are hidden instead of deleted in order to preserver the grid layout
+    [HideInInspector]
+    public bool m_isVisible;
 
     // False for backSideSprite, true for frontSideSprite
     private bool m_isFlipped = false;
@@ -32,6 +35,7 @@ public class Card : MonoBehaviour
     private void Start()
     {
         m_image = this.gameObject.GetComponent<UnityEngine.UI.Image>();
+        m_image.enabled = m_isVisible;
         m_animation = this.gameObject.GetComponent<Animation>();
         m_button = this.gameObject.GetComponent<UnityEngine.UI.Button>();
     }

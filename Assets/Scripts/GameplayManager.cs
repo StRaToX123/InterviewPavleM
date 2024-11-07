@@ -1,7 +1,9 @@
+using Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,48 +26,33 @@ public class GameplayManager : MonoBehaviour, ISaveGame
     public Tuple<int, int> m_lastSelectedCardIndexes = null;
 
 
-
     private Card[,] m_cardMatrix;
-    
-    private int m_score = 0;
-    private int m_pairMatchScoreMultiplier = 1;
+    private int m_score;
+    private int m_pairMatchScoreMultiplier;
     private int m_numberOfActiveCards;
-    private float m_elapsedTime = 0.0f;
+    private float m_elapsedTime;
 
-    void OnEnable()
+
+    public void StartNewGame()
     {
-        if (m_cardPrefab == null)
-        {
-            throw new Exception("No card prefab set");
-        }
-
-        m_menuManager.m_gameplayUIScoreText.text = "0";
-        m_menuManager.m_gameplayUIMultiplierText.text = "x1";
-        m_cardMatrix = new Card[m_rowCount, m_columnCount];
+        ClearData();
+        m_score = 0;
+        m_pairMatchScoreMultiplier = 1;
         m_numberOfActiveCards = m_rowCount * m_columnCount;
-        // In order to optimize randomly choosing two cards from the m_cardMatrix and assigning them the same pairID,
+        m_elapsedTime = 0.0f;
+        UpdateGameplayUI();
+         m_cardMatrix = new Card[m_rowCount, m_columnCount];
+        // In order to optimize randomly choosing two cards from the m_cardMatrix and assigning them the same spriteIndex,
         // instead of calling Random.Range a bunch of times in order to select never before selected cards, we will
         // create this helper array which houses each cards indexes. We will then shuffle the contents of the array
         // (a fixed number of Random.Range calls) and then simply iterate over it, taking each two consecutive values
         // as a randomly selected pair of indexes
         List<Tuple<int, int>> cardIndexes = new List<Tuple<int, int>>(m_numberOfActiveCards);
-        for (int i = 0; i < m_rowCount; i++)
-        {
-            for (int j = 0; j < m_columnCount; j++)
-            {
-                GameObject newCardGameObject = Instantiate(m_cardPrefab, new Vector3(0, 0, 0), Quaternion.identity);
-                Card newCard = newCardGameObject.GetComponent<Card>();
-                m_cardMatrix[i, j] = newCard;
-                newCard.m_gameplayManager = this;
-                newCard.m_cardIndexes = new Tuple<int, int>(i, j);
-
-                // Parent to newly instantiated prefab to the grid layout
-                newCardGameObject.transform.SetParent(m_cardHolderRect.transform, false);
-                cardIndexes.Add(new Tuple<int, int>(i, j));
-            }
-        }
-
-
+        CreateCardMatrix(m_rowCount, m_columnCount, card => {
+            cardIndexes.Add(new Tuple<int, int>(card.m_cardIndexes.Item1, card.m_cardIndexes.Item2));
+            card.m_isVisible = true;
+        });
+        
         // Assign card ids in pairs.
         // First we need to choose two cards from the m_cardMatrix
         // To do this we will jumble up the cardIndexes array first
@@ -89,7 +76,6 @@ public class GameplayManager : MonoBehaviour, ISaveGame
             m_cardMatrix[cardIndexes[i + 1].Item1, cardIndexes[i + 1].Item2].m_frontSideSprite = m_cardSprites[spriteIndex];
             spriteIndex += 1;
         }
-
 
         // Position each card in the canvas
         // This will be done automatically by the m_cardsGridLayout component
@@ -118,6 +104,25 @@ public class GameplayManager : MonoBehaviour, ISaveGame
         }   
     }
 
+    private void CreateCardMatrix(int rowCount, int columnCount, Action<Card> cardModificationFunction)
+    {
+        for (int i = 0; i < rowCount; i++)
+        {
+            for (int j = 0; j < columnCount; j++)
+            {
+                GameObject newCardGameObject = Instantiate(m_cardPrefab, new Vector3(0, 0, 0), Quaternion.identity);
+                Card newCard = newCardGameObject.GetComponent<Card>();
+                m_cardMatrix[i, j] = newCard;
+                newCard.m_gameplayManager = this;
+                newCard.m_cardIndexes = new Tuple<int, int>(i, j);
+                cardModificationFunction?.Invoke(newCard);
+
+                // Parent to newly instantiated prefab to the grid layout
+                newCardGameObject.transform.SetParent(m_cardHolderRect.transform, false);
+            }
+        }
+    }
+
     public void SelectCard(Tuple<int, int> cardIndexes)
     {
         if (m_lastSelectedCardIndexes != null)
@@ -129,9 +134,8 @@ public class GameplayManager : MonoBehaviour, ISaveGame
             {
                 m_score += m_pairMatchScoreValue * m_pairMatchScoreMultiplier;
                 m_pairMatchScoreMultiplier++;
-                m_menuManager.m_gameplayUIScoreText.text = "SCORE: " + m_score.ToString();
                 // We cannot destroy these cards because that will rearange the grid layout.
-                // Instead we will just diable the image component
+                // Instead we will just diable the fro component
                 previousCard.m_image.enabled = false;
                 currentCard.m_image.enabled = false;
                 m_numberOfActiveCards -= 2;
@@ -151,7 +155,7 @@ public class GameplayManager : MonoBehaviour, ISaveGame
                 currentCard.m_animation.Play();
             }
 
-            m_menuManager.m_gameplayUIMultiplierText.text = "x" + m_pairMatchScoreMultiplier.ToString();
+            UpdateGameplayUI();
             m_lastSelectedCardIndexes = null;
         }
         else
@@ -160,13 +164,10 @@ public class GameplayManager : MonoBehaviour, ISaveGame
         }
     }
 
-    private void ShowVictoryScreen()
+    private void UpdateGameplayUI()
     {
-        m_menuManager.m_gameplayUI.SetActive(false);
-        m_menuManager.m_victoryMenu.SetActive(true);
-        m_menuManager.m_victoryMenuModeText.text = "MODE: " + m_rowCount.ToString() + "X" + m_columnCount.ToString();
-        m_menuManager.m_victoryMenuFinalScoreText.text = "FINAL SCORE: " + m_score.ToString();
-        m_menuManager.m_victoryMenuFinalTimeText.text = "FINAL TIME: " + Mathf.FloorToInt(m_elapsedTime) + "sec";
+        m_menuManager.m_gameplayUIScoreText.text = "SCORE: " + m_score.ToString();
+        m_menuManager.m_gameplayUIMultiplierText.text = "MULT: x" + m_pairMatchScoreMultiplier.ToString();
     }
 
     void Update()
@@ -180,23 +181,77 @@ public class GameplayManager : MonoBehaviour, ISaveGame
 
     public void LoadData(SaveGameData data)
     {
-        
+        ClearData();
+        m_rowCount = data.m_rowCount;
+        m_columnCount = data.m_columnCount;
+        m_score = data.m_score;
+        m_pairMatchScoreMultiplier = data.m_pairMatchScoreMultiplier;
+        m_numberOfActiveCards = data.m_numberOfActiveCards;
+        m_elapsedTime = data.m_elapsedTime;
+        m_cardMatrix = new Card[m_rowCount, m_columnCount];
+        CreateCardMatrix(m_rowCount, m_columnCount, card =>
+        {
+            // Assign the sprite index and the visibility status from the loaded data
+            card.m_spriteIndex = data.m_cardMatrix[card.m_cardIndexes.Item1, card.m_cardIndexes.Item2].m_spriteIndex;
+            card.m_frontSideSprite = m_cardSprites[card.m_spriteIndex];
+            card.m_isVisible = data.m_cardMatrix[card.m_cardIndexes.Item1, card.m_cardIndexes.Item2].m_isVisible;
+        });
+
+        m_cardsGridLayoutGroup.cellSize = new Vector2(data.m_cardsGridLayoutCellSize, data.m_cardsGridLayoutCellSize);
+        m_cardsGridLayoutGroup.constraint = data.m_cardsGridLayoutConstraint;
+        m_cardsGridLayoutGroup.constraintCount = data.m_cardsGridLayoutConstraintCount;
+
+        UpdateGameplayUI();
     }
 
     public void SaveData(SaveGameData data)
     {
+        data.m_rowCount = m_rowCount;
+        data.m_columnCount = m_columnCount;
         data.m_score = m_score;
         data.m_pairMatchScoreMultiplier = m_pairMatchScoreMultiplier;
         data.m_numberOfActiveCards = m_numberOfActiveCards;
         data.m_elapsedTime = m_elapsedTime;
-        data.m_cardMatrix = new SaveGameData.CardSaveData[m_rowCount, m_columnCount];
+        data.m_cardMatrix = new TArray<SaveGameData.CardSaveData>(m_rowCount, m_columnCount);
         for (int i = 0; i < m_rowCount; i++)
         {
             for (int j = 0; j < m_columnCount; j++)
             {
-                data.m_cardMatrix[i, j].m_spriteIndex = m_cardMatrix[i, j].m_spriteIndex;
-                data.m_cardMatrix[i, j].m_isVisible = m_cardMatrix[i, j].m_image.enabled;
+                SaveGameData.CardSaveData newCardSaveData = new SaveGameData.CardSaveData();
+                newCardSaveData.m_spriteIndex = m_cardMatrix[i, j].m_spriteIndex;
+                newCardSaveData.m_isVisible = m_cardMatrix[i, j].m_image.enabled;
+                data.m_cardMatrix[i, j] = newCardSaveData;
             }
         }
+
+        data.m_cardsGridLayoutCellSize = (int)m_cardsGridLayoutGroup.cellSize.x;
+        data.m_cardsGridLayoutConstraint = m_cardsGridLayoutGroup.constraint;
+        data.m_cardsGridLayoutConstraintCount = m_cardsGridLayoutGroup.constraintCount;
+    }
+
+    public void ClearData()
+    {
+        if (m_cardMatrix != null)
+        {
+            for (int i = 0; i < m_cardMatrix.GetLength(0); i++)
+            {
+                for (int j = 0; j < m_cardMatrix.GetLength(1); j++)
+                {
+                    Destroy(m_cardMatrix[i, j].gameObject);
+                }
+            }
+        }
+
+        m_cardMatrix = null;
+    }
+
+    private void ShowVictoryScreen()
+    {
+        SaveGameManager.DeleteSaveGame();
+        m_menuManager.m_gameplayUI.SetActive(false);
+        m_menuManager.m_victoryMenu.SetActive(true);
+        m_menuManager.m_victoryMenuModeText.text = "MODE: " + m_rowCount.ToString() + "X" + m_columnCount.ToString();
+        m_menuManager.m_victoryMenuFinalScoreText.text = "FINAL SCORE: " + m_score.ToString();
+        m_menuManager.m_victoryMenuFinalTimeText.text = "FINAL TIME: " + Mathf.FloorToInt(m_elapsedTime) + "sec";
     }
 }

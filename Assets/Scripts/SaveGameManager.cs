@@ -12,6 +12,7 @@ public class SaveGameManager : MonoBehaviour
     private SaveGameData m_saveGameData;
     private List<ISaveGame> m_saveGameObjects;
     private string m_fileName = "SaveGame.data";
+    private string m_saveGameFileFullPath;
 
     public static SaveGameManager m_instance { get; private set; }
 
@@ -32,45 +33,69 @@ public class SaveGameManager : MonoBehaviour
             .OfType<ISaveGame>();
 
         this.m_saveGameObjects = new List<ISaveGame>(saveGameObjects);
+        this.m_saveGameFileFullPath = Path.Combine(Application.persistentDataPath, m_fileName);
     }
 
-    public void NewGame() 
+    public static bool DoesSaveGameExist()
     {
         // Clear any existing save
-        string fullPath = Path.Combine(Application.persistentDataPath, m_fileName);
         try
         {
-            // Make sure the file exists
-            if (File.Exists(fullPath))
+            // Make sure the file exists    
+            if (File.Exists(m_instance.m_saveGameFileFullPath))
             {
-                Directory.Delete(Path.GetDirectoryName(fullPath), true);
+                return true;
             }
             else
             {
-                Debug.LogWarning("Error during deletion of SaveGame data. File was not found at path: " + fullPath);
+                return false;
             }
         }
         catch (Exception e)
         {
-            Debug.LogError("Directory.Delete Failed to delete the SaveGame data " + " at path: " + fullPath + "\n" + e);
+            Debug.LogError("Directory.Delete Failed to delete the SaveGame data " + " at path: " + m_instance.m_saveGameFileFullPath + "\n" + e);
         }
 
-        // Create a fresh new SaveGameData
-        this.m_saveGameData = new SaveGameData();
+        return false;
     }
 
-    public void LoadGame()
+    public static void DeleteSaveGame()
+    {
+        // Clear any existing save
+        try
+        {
+            // Make sure the file exists    
+            if (File.Exists(m_instance.m_saveGameFileFullPath))
+            {
+                Directory.Delete(Path.GetDirectoryName(m_instance.m_saveGameFileFullPath), true);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("Directory.Delete Failed to delete the SaveGame data " + " at path: " + m_instance.m_saveGameFileFullPath + "\n" + e);
+        }
+
+        m_instance.m_saveGameData = null;
+    }
+
+    public static void NewGame() 
+    {
+        DeleteSaveGame();
+        // Create a fresh new SaveGameData
+        m_instance.m_saveGameData = new SaveGameData();
+    }
+
+    public static void LoadGame()
     {
         // Use Path.Combine to account for different OS's having different path separators
-        string fullPath = Path.Combine(Application.persistentDataPath, m_fileName);
-        this.m_saveGameData = null;
-        if (File.Exists(fullPath))
+        m_instance.m_saveGameData = null;
+        if (File.Exists(m_instance.m_saveGameFileFullPath))
         {
             try
             {
                 // Load the serialized data from the file
                 string dataToLoad = "";
-                using (FileStream stream = new FileStream(fullPath, FileMode.Open))
+                using (FileStream stream = new FileStream(m_instance.m_saveGameFileFullPath, FileMode.Open))
                 {
                     using (StreamReader reader = new StreamReader(stream))
                     {
@@ -79,40 +104,43 @@ public class SaveGameManager : MonoBehaviour
                 }
 
                 // Deserialize the data from Json back into the C# object
-                this.m_saveGameData = JsonUtility.FromJson<SaveGameData>(dataToLoad);
+                m_instance.m_saveGameData = JsonUtility.FromJson<SaveGameData>(dataToLoad);
             }
             catch (Exception e)
             {
-                Debug.LogError("Error occured when trying to load file at path: " + fullPath + "\n" + e);
+                Debug.LogError("Error occured when trying to load file at path: " + m_instance.m_saveGameFileFullPath + "\n" + e);
             }
         }
 
-        if (this.m_saveGameData == null) 
+        if (m_instance.m_saveGameData == null) 
         {
-            this.m_saveGameData = new SaveGameData();
+            return;
         }
 
-        foreach (ISaveGame saveGameObjects in m_saveGameObjects) 
+        foreach (ISaveGame saveGameObjects in m_instance.m_saveGameObjects) 
         {
-            saveGameObjects.LoadData(m_saveGameData);
+            saveGameObjects.LoadData(m_instance.m_saveGameData);
         }
     }
 
-    public void SaveGame()
+    public static void SaveGame()
     {
-        foreach (ISaveGame dataPersistenceObj in m_saveGameObjects) 
+        if (m_instance.m_saveGameData == null)
         {
-            dataPersistenceObj.SaveData(m_saveGameData);
+            return;
         }
 
-        // Use Path.Combine to account for different OS's having different path separators
-        string fullPath = Path.Combine(Application.persistentDataPath, m_fileName);
+        foreach (ISaveGame dataPersistenceObj in m_instance.m_saveGameObjects) 
+        {
+            dataPersistenceObj.SaveData(m_instance.m_saveGameData);
+        }
+
         try
         {
             // Create the directory the file will be written to if it doesn't already exist
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
-            string dataToStore = JsonUtility.ToJson(m_saveGameData, true);
-            using (FileStream stream = new FileStream(fullPath, FileMode.Create))
+            Directory.CreateDirectory(Path.GetDirectoryName(m_instance.m_saveGameFileFullPath));
+            string dataToStore = JsonUtility.ToJson(m_instance.m_saveGameData, true);
+            using (FileStream stream = new FileStream(m_instance.m_saveGameFileFullPath, FileMode.Create))
             {
                 using (StreamWriter writer = new StreamWriter(stream))
                 {
@@ -122,7 +150,7 @@ public class SaveGameManager : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogError("Error occured when trying to save data to file: " + fullPath + "\n" + e);
+            Debug.LogError("Error occured when trying to save data to file: " + m_instance.m_saveGameFileFullPath + "\n" + e);
         }
     }
 
