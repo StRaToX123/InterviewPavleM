@@ -42,12 +42,13 @@ public class Card : MonoBehaviour
 
     public void OnCardClick()
     {
-        // The card is not cliclable again until a second one is selected
+        // The card is not clickable again until a second one is selected
         // The GameplayManager will set the flip animation for the second time
         // if a missmatch occured
         if (m_isFlipped == false)
         {
             m_animation.Play();
+            AudioManager.PlayOneShotAudioClip("CardFlip");
         }
     }
 

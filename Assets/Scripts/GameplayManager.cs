@@ -139,6 +139,7 @@ public class GameplayManager : MonoBehaviour, ISaveGame
                 previousCard.m_image.enabled = false;
                 currentCard.m_image.enabled = false;
                 m_numberOfActiveCards -= 2;
+                AudioManager.PlayOneShotAudioClip("CardMatch");
                 // Did we finish the game
                 if (m_numberOfActiveCards == 0)
                 {
@@ -148,6 +149,7 @@ public class GameplayManager : MonoBehaviour, ISaveGame
             else
             {
                 m_pairMatchScoreMultiplier = 1;
+                AudioManager.PlayOneShotAudioClip("CardMismatch");
                 // Playing the flip animation
                 previousCard.m_animation.Stop();
                 previousCard.m_animation.Play();
@@ -247,6 +249,7 @@ public class GameplayManager : MonoBehaviour, ISaveGame
 
     private void ShowVictoryScreen()
     {
+        AudioManager.PlayOneShotAudioClip("Victory");
         SaveGameManager.DeleteSaveGame();
         m_menuManager.m_gameplayUI.SetActive(false);
         m_menuManager.m_victoryMenu.SetActive(true);
