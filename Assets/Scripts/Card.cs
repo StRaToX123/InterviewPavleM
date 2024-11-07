@@ -11,7 +11,7 @@ using Image = UnityEngine.UI.Image;
 public class Card : MonoBehaviour
 {
     // Automatically assigned by the GameplayManager
-    public int m_pairId;
+    public int m_spriteIndex;
     [HideInInspector]
     public Tuple<int, int> m_cardIndexes;
     public Sprite m_backSideSprite;

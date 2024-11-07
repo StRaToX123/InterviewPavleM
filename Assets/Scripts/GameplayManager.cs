@@ -8,7 +8,7 @@ using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
 
-public class GameplayManager : MonoBehaviour
+public class GameplayManager : MonoBehaviour, ISaveGame
 {
     public int m_pairMatchScoreValue = 10;
     public MenuManager m_menuManager;
@@ -80,14 +80,14 @@ public class GameplayManager : MonoBehaviour
             cardIndexes[randomIndex02] = backup;
         }
 
-        int id = 0;
+        int spriteIndex = 0;
         for (int i = 0; i < cardIndexes.Count; i += 2)
         {
-            m_cardMatrix[cardIndexes[i].Item1, cardIndexes[i].Item2].m_pairId = id;
-            m_cardMatrix[cardIndexes[i].Item1, cardIndexes[i].Item2].m_frontSideSprite = m_cardSprites[id];
-            m_cardMatrix[cardIndexes[i + 1].Item1, cardIndexes[i + 1].Item2].m_pairId = id;
-            m_cardMatrix[cardIndexes[i + 1].Item1, cardIndexes[i + 1].Item2].m_frontSideSprite = m_cardSprites[id];
-            id += 1;
+            m_cardMatrix[cardIndexes[i].Item1, cardIndexes[i].Item2].m_spriteIndex = spriteIndex;
+            m_cardMatrix[cardIndexes[i].Item1, cardIndexes[i].Item2].m_frontSideSprite = m_cardSprites[spriteIndex];
+            m_cardMatrix[cardIndexes[i + 1].Item1, cardIndexes[i + 1].Item2].m_spriteIndex = spriteIndex;
+            m_cardMatrix[cardIndexes[i + 1].Item1, cardIndexes[i + 1].Item2].m_frontSideSprite = m_cardSprites[spriteIndex];
+            spriteIndex += 1;
         }
 
 
@@ -125,7 +125,7 @@ public class GameplayManager : MonoBehaviour
             Card previousCard = m_cardMatrix[m_lastSelectedCardIndexes.Item1, m_lastSelectedCardIndexes.Item2];
             Card currentCard = m_cardMatrix[cardIndexes.Item1, cardIndexes.Item2];
             // If the previous card's pair id and the newly selected card's pair id is the same
-            if (previousCard.m_pairId == currentCard.m_pairId)
+            if (previousCard.m_spriteIndex == currentCard.m_spriteIndex)
             {
                 m_score += m_pairMatchScoreValue * m_pairMatchScoreMultiplier;
                 m_pairMatchScoreMultiplier++;
@@ -176,5 +176,27 @@ public class GameplayManager : MonoBehaviour
         int minutes = Mathf.FloorToInt(m_elapsedTime / 60);
         int seconds = Mathf.FloorToInt(m_elapsedTime % 60);
         m_menuManager.m_gameplayUITimeText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+    }
+
+    public void LoadData(SaveGameData data)
+    {
+        
+    }
+
+    public void SaveData(SaveGameData data)
+    {
+        data.m_score = m_score;
+        data.m_pairMatchScoreMultiplier = m_pairMatchScoreMultiplier;
+        data.m_numberOfActiveCards = m_numberOfActiveCards;
+        data.m_elapsedTime = m_elapsedTime;
+        data.m_cardMatrix = new SaveGameData.CardSaveData[m_rowCount, m_columnCount];
+        for (int i = 0; i < m_rowCount; i++)
+        {
+            for (int j = 0; j < m_columnCount; j++)
+            {
+                data.m_cardMatrix[i, j].m_spriteIndex = m_cardMatrix[i, j].m_spriteIndex;
+                data.m_cardMatrix[i, j].m_isVisible = m_cardMatrix[i, j].m_image.enabled;
+            }
+        }
     }
 }
