@@ -29,13 +29,14 @@ public class Card : MonoBehaviour
     public bool m_isVisible;
 
     // False for backSideSprite, true for frontSideSprite
-    private bool m_isFlipped = false;
+    private bool m_isFlipped;
     
 
     private void Start()
     {
         m_image = this.gameObject.GetComponent<UnityEngine.UI.Image>();
         m_image.enabled = m_isVisible;
+        m_isFlipped = false;
         m_animation = this.gameObject.GetComponent<Animation>();
         m_button = this.gameObject.GetComponent<UnityEngine.UI.Button>();
     }

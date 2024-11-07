@@ -245,6 +245,7 @@ public class GameplayManager : MonoBehaviour, ISaveGame
         }
 
         m_cardMatrix = null;
+        m_lastSelectedCardIndexes = null;
     }
 
     private void ShowVictoryScreen()
